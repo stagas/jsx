@@ -1,3 +1,5 @@
+import { debounce } from 'utils'
+
 export type Off = () => void
 export type Start = () => Off
 export type Factory = (target: HTMLElement) => Off
@@ -12,10 +14,19 @@ export function mount(sel: string | HTMLElement, fn: Factory): Start {
   }
 }
 
+let dispose: Off | null
+let startFn: Start
+
+const startDebounced = debounce(10, () => {
+  dispose?.()
+  dispose = startFn()
+})
+
 export function hmr(start: Start, state: Record<string, any>, replaceState: (x: Record<string, any>) => void) {
   if (!import.meta.hot) return () => { }
 
-  let dispose: Off | null
+  startFn = start
+
   try {
     const json = JSON.stringify({ ...state })
     const first = import.meta.hot.data.first
@@ -33,12 +44,14 @@ export function hmr(start: Start, state: Record<string, any>, replaceState: (x: 
       }
       import.meta.hot.data.first = json
     }
-    dispose = start()
+    startDebounced()
     import.meta.hot.data.top = true
     import.meta.hot.data.state = state
-    import.meta.hot.on('vite:beforeUpdate', () => {
+    import.meta.hot.on('vite:beforeUpdate', function listener() {
+      import.meta.hot!.off('vite:beforeUpdate', listener)
       dispose?.()
       dispose = null
+      console.log('[hmr] update')
     })
   }
   catch (error) {
@@ -50,7 +63,9 @@ export function hmr(start: Start, state: Record<string, any>, replaceState: (x: 
     dispose?.()
     dispose = null
     if (import.meta.hot!.data.top) return
-    dispose = x.start()
+
+    startFn = x.start
+    startDebounced()
     import.meta.hot!.data.top = false
   }
 }

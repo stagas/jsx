@@ -74,7 +74,12 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
       ? []
       : [attrs.children]
 
-  if (typeof tagName === 'function') return tagName(attrs)
+  if (typeof tagName === 'function') {
+    const el = tagName(attrs)
+    if (typeof el === 'object' && el !== null && 'el' in el) return el.el
+    return el
+  }
+
   if (tagName instanceof Element) return tagName
 
   const el: any = isSvg || SvgTags.has(tagName)
@@ -103,7 +108,7 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
         fns.computedAttributeFn(el, key, val)
       }
       else if (val !== false) {
-        el.setAttribute(key, val)
+        el.setAttribute(key, [val].flat(Infinity).filter(Boolean).join(' '))
       }
       else {
         el[key] = val
