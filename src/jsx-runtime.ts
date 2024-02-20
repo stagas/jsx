@@ -65,7 +65,7 @@ export function svg(fn: () => JSX.Element): JSX.Element {
   return result
 }
 
-const SvgTags = new Set(`svg path circle rect`.split(' '))
+const SvgTags = new Set(`svg g defs use path circle rect`.split(' '))
 
 export function _h(tagName: string | Function | Element, attrs: { [key: string]: any} , key: string) {
   attrs.children = Array.isArray(attrs.children)
