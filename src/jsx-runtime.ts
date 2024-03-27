@@ -16,8 +16,13 @@ export const fns = {
   addEventListenerFn: (el: Element, name: string, item: any): void => {
     el.addEventListener(name, item, false)
   },
-  computedAttributeFn: (el: Element, attrib: string, fn: any): void => {
-    el.setAttribute(attrib, fn())
+  computedAttributeFn: (el: HTMLElement, attrib: string, fn: any): void => {
+    if (attrib === 'style') {
+      Object.assign(el.style, fn())
+    }
+    else {
+      el.setAttribute(attrib, fn())
+    }
   }
 }
 
@@ -65,9 +70,9 @@ export function svg(fn: () => JSX.Element): JSX.Element {
   return result
 }
 
-const SvgTags = new Set(`svg g defs use path circle rect`.split(' '))
+const SvgTags = new Set(`svg g defs use path circle rect animate`.split(' '))
 
-export function _h(tagName: string | Function | Element, attrs: { [key: string]: any} , key: string) {
+export function _h(tagName: string | Function | Element, attrs: { [key: string]: any }, key: string) {
   attrs.children = Array.isArray(attrs.children)
     ? attrs.children
     : attrs.children == null
@@ -96,16 +101,15 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
       // }
       if (val == null)
         continue
-
-      if (key === 'style' && typeof attrs.style !== 'string') {
-        Object.assign(el.style, attrs.style)
-      }
-      else if (key.startsWith('on')) {
+      if (key.startsWith('on')) {
         const name = key.substring(2).toLowerCase()
         fns.addEventListenerFn(el, name, val)
       }
       else if (typeof val === 'function') {
         fns.computedAttributeFn(el, key, val)
+      }
+      else if (key === 'style' && typeof attrs.style !== 'string') {
+        Object.assign(el.style, attrs.style)
       }
       else if (val !== false) {
         el.setAttribute(key, [val].flat(Infinity).filter(Boolean).join(' '))
