@@ -22,7 +22,9 @@ const startDebounced = debounce(10, () => {
   dispose = startFn()
 })
 
-export function hmr(start: Start, state: Record<string, any>, replaceState: (x: Record<string, any>) => void) {
+const time = () => new Date().toTimeString().split(' ')[0]
+
+export function hmr<T extends Record<string, any>>(start: Start, state: T, replaceState: (x: T) => void) {
   if (!import.meta.hot) return () => { }
 
   startFn = start
@@ -47,11 +49,11 @@ export function hmr(start: Start, state: Record<string, any>, replaceState: (x: 
     startDebounced()
     import.meta.hot.data.top = true
     import.meta.hot.data.state = state
-    import.meta.hot.on('vite:beforeUpdate', function listener() {
+    import.meta.hot.on('vite:beforeUpdate', function listener(event) {
       import.meta.hot!.off('vite:beforeUpdate', listener)
       dispose?.()
       dispose = null
-      console.log('[hmr] update')
+      console.log('[hmr]', time(), 'update', event.updates.map(x => x.path).join(' '))
     })
   }
   catch (error) {
