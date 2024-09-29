@@ -1,10 +1,91 @@
 type DOMElement = Element
+type EventHandler<T> = (ev: T) => void
 
 declare global {
   namespace JSX {
     type Element = DOMElement
     interface IntrinsicElements {
       [k: string]: unknown
+    }
+    interface IntrinsicAttributes {
+      onabort?: EventHandler<Event>
+      onanimationend?: EventHandler<AnimationEvent>
+      onanimationiteration?: EventHandler<AnimationEvent>
+      onanimationstart?: EventHandler<AnimationEvent>
+      onblur?: EventHandler<FocusEvent>
+      oncanplay?: EventHandler<Event>
+      oncanplaythrough?: EventHandler<Event>
+      onchange?: EventHandler<Event>
+      onclick?: EventHandler<MouseEvent>
+      oncompositionend?: EventHandler<CompositionEvent>
+      oncompositionstart?: EventHandler<CompositionEvent>
+      oncompositionupdate?: EventHandler<CompositionEvent>
+      oncontextmenu?: EventHandler<MouseEvent>
+      oncopy?: EventHandler<ClipboardEvent>
+      oncut?: EventHandler<ClipboardEvent>
+      ondblclick?: EventHandler<MouseEvent>
+      ondrag?: EventHandler<DragEvent>
+      ondragend?: EventHandler<DragEvent>
+      ondragenter?: EventHandler<DragEvent>
+      ondragexit?: EventHandler<DragEvent>
+      ondragleave?: EventHandler<DragEvent>
+      ondragover?: EventHandler<DragEvent>
+      ondragstart?: EventHandler<DragEvent>
+      ondrop?: EventHandler<DragEvent>
+      ondurationchange?: EventHandler<Event>
+      onemptied?: EventHandler<Event>
+      onencrypted?: EventHandler<Event>
+      onended?: EventHandler<Event>
+      onerror?: EventHandler<Event>
+      onfocus?: EventHandler<FocusEvent>
+      ongotpointercapture?: EventHandler<PointerEvent>
+      oninput?: EventHandler<InputEvent>
+      onkeydown?: EventHandler<KeyboardEvent>
+      onkeypress?: EventHandler<KeyboardEvent>
+      onkeyup?: EventHandler<KeyboardEvent>
+      onload?: EventHandler<Event>
+      onloadeddata?: EventHandler<Event>
+      onloadedmetadata?: EventHandler<Event>
+      onloadstart?: EventHandler<Event>
+      onlostpointercapture?: EventHandler<PointerEvent>
+      onmousedown?: EventHandler<MouseEvent>
+      onmouseenter?: EventHandler<MouseEvent>
+      onmouseleave?: EventHandler<MouseEvent>
+      onmousemove?: EventHandler<MouseEvent>
+      onmouseout?: EventHandler<MouseEvent>
+      onmouseover?: EventHandler<MouseEvent>
+      onmouseup?: EventHandler<MouseEvent>
+      onpaste?: EventHandler<ClipboardEvent>
+      onpause?: EventHandler<Event>
+      onplay?: EventHandler<Event>
+      onplaying?: EventHandler<Event>
+      onpointercancel?: EventHandler<PointerEvent>
+      onpointerdown?: EventHandler<PointerEvent>
+      onpointerenter?: EventHandler<PointerEvent>
+      onpointerleave?: EventHandler<PointerEvent>
+      onpointermove?: EventHandler<PointerEvent>
+      onpointerout?: EventHandler<PointerEvent>
+      onpointerover?: EventHandler<PointerEvent>
+      onpointerup?: EventHandler<PointerEvent>
+      onprogress?: EventHandler<Event>
+      onratechange?: EventHandler<Event>
+      onreset?: EventHandler<Event>
+      onscroll?: EventHandler<UIEvent>
+      onseeked?: EventHandler<Event>
+      onseeking?: EventHandler<Event>
+      onselect?: EventHandler<UIEvent>
+      onstalled?: EventHandler<Event>
+      onsubmit?: EventHandler<Event & { submitter: HTMLElement }>
+      onsuspend?: EventHandler<Event>
+      ontimeupdate?: EventHandler<Event>
+      ontouchcancel?: EventHandler<TouchEvent>
+      ontouchend?: EventHandler<TouchEvent>
+      ontouchmove?: EventHandler<TouchEvent>
+      ontouchstart?: EventHandler<TouchEvent>
+      ontransitionend?: EventHandler<TransitionEvent>
+      onvolumechange?: EventHandler<Event>
+      onwaiting?: EventHandler<Event>
+      onwheel?: EventHandler<WheelEvent>
     }
   }
 }
@@ -61,7 +142,7 @@ export function getRefs(
 
 export const Fragment = ({ children }: any) => flatAndFilter(children)
 
-let isSvg = false
+export let isSvg = false
 
 export function svg(fn: () => JSX.Element): JSX.Element {
   isSvg = true
@@ -71,6 +152,16 @@ export function svg(fn: () => JSX.Element): JSX.Element {
 }
 
 const SvgTags = new Set(`svg g defs use path circle rect animate`.split(' '))
+
+export function createGroupElement() {
+  return createElement(isSvg ? 'g' : 'div')
+}
+
+export function createElement(tagName: string) {
+  return isSvg || SvgTags.has(tagName)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tagName)
+    : document.createElement(tagName)
+}
 
 export function _h(tagName: string | Function | Element, attrs: { [key: string]: any }, key: string) {
   attrs.children = Array.isArray(attrs.children)
@@ -87,22 +178,15 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
 
   if (tagName instanceof Element) return tagName
 
-  const el: any = isSvg || SvgTags.has(tagName)
-    ? document.createElementNS('http://www.w3.org/2000/svg', tagName)
-    : document.createElement(tagName)
+  const el: any = createElement(tagName)
 
   if (attrs) {
     for (const [key, val] of Object.entries(attrs)) {
       if (key === 'children') continue
-      // const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), key)
-      // const isReadOnly = !!(descriptor?.get && !descriptor.set)
-      // if (!isReadOnly) {
-      //   el[key] = val
-      // }
       if (val == null)
         continue
       if (key.startsWith('on')) {
-        const name = key.substring(2).toLowerCase()
+        const name = key.slice(2)
         fns.addEventListenerFn(el, name, val)
       }
       else if (typeof val === 'function') {
