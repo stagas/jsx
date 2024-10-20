@@ -3,7 +3,7 @@ type EventHandler<T> = (ev: T) => void
 
 declare global {
   namespace JSX {
-    type Element = DOMElement
+    type Element = DOMElement | { el: Element }
     interface IntrinsicElements {
       [k: string]: unknown
     }
@@ -90,7 +90,7 @@ declare global {
   }
 }
 
-export const refs: Record<string, Element> = {}
+export const refs: Record<string, Element | undefined> = {}
 
 export const fns = {
   mapItemFn: (item: any): any => item,
@@ -107,9 +107,19 @@ export const fns = {
   }
 }
 
+function toEl(obj: any) {
+  if (typeof obj === 'object' && obj !== null && 'el' in obj) return obj.el
+  return obj
+}
+
+function nonNull(x: any) {
+  return x != null
+}
+
 const flatAndFilter = (children: any[]) =>
   children
     .flat(Infinity)
+    .map(toEl)
     .map(fns.mapItemFn)
     .filter(el =>
       el instanceof Node
@@ -151,7 +161,7 @@ export function svg(fn: () => JSX.Element): JSX.Element {
   return result
 }
 
-const SvgTags = new Set(`svg g defs use path circle rect animate`.split(' '))
+const SvgTags = new Set(`svg g defs use path circle rect animate clipPath`.split(' '))
 
 export function createGroupElement() {
   return createElement(isSvg ? 'g' : 'div')
@@ -172,7 +182,6 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
 
   if (typeof tagName === 'function') {
     const el = tagName(attrs)
-    if (typeof el === 'object' && el !== null && 'el' in el) return el.el
     return el
   }
 
@@ -196,7 +205,7 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
         Object.assign(el.style, attrs.style)
       }
       else if (val !== false) {
-        el.setAttribute(key, [val].flat(Infinity).filter(Boolean).join(' '))
+        el.setAttribute(key, [val].flat(Infinity).filter(nonNull).join(' '))
       }
       else {
         el[key] = val

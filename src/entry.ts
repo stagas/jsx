@@ -53,7 +53,7 @@ export function hmr<T extends Record<string, any>>(start: Start, state: T, repla
       import.meta.hot!.off('vite:beforeUpdate', listener)
       dispose?.()
       dispose = null
-      console.log('[hmr]', time(), 'update', event.updates.map(x => x.path).join(' '))
+      console.debug('[hmr]', time(), 'update', event.updates.map(x => x.path).join(' '))
     })
   }
   catch (error) {
