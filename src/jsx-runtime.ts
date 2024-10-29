@@ -213,7 +213,9 @@ export function _h(tagName: string | Function | Element, attrs: { [key: string]:
     }
   }
 
-  el.append(...(flatAndFilter(attrs.children)) as (Node | string)[])
+  const fragment = document.createDocumentFragment()
+  fragment.append(...(flatAndFilter(attrs.children)) as (Node | string)[])
+  el.append(fragment)
 
   Object.assign(refs, getRefs(el))
 
